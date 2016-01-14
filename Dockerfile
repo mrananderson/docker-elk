@@ -21,14 +21,24 @@ RUN \
 
 ADD etc/supervisor/conf.d/elasticsearch.conf /etc/supervisor/conf.d/elasticsearch.conf
 
-# Logstash
-RUN apt-get install --no-install-recommends -y logstash && \
+RUN apt-get -y install curl libcurl4-openssl-dev ruby ruby-dev make build-essential
+
+# Install Fluentd.
+RUN echo "deb http://packages.treasure-data.com/precise/ precise contrib" > /etc/apt/sources.list.d/treasure-data.list && \
+    apt-get update && \
+    apt-get install -y --force-yes libssl0.9.8 software-properties-common td-agent && \
     apt-get clean
+ENV GEM_HOME /usr/lib/fluent/ruby/lib/ruby/gems/1.9.1/
+ENV GEM_PATH /usr/lib/fluent/ruby/lib/ruby/gems/1.9.1/
+ENV PATH /usr/lib/fluent/ruby/bin:$PATH
+RUN fluentd --setup=/etc/fluent && \
+    /usr/lib/fluent/ruby/bin/fluent-gem install fluent-plugin-elasticsearch \
+    fluent-plugin-secure-forward fluent-plugin-record-reformer fluent-plugin-exclude-filter && \
+    mkdir -p /var/log/fluent
 
-ADD etc/supervisor/conf.d/logstash.conf /etc/supervisor/conf.d/logstash.conf
-
-# Logstash plugins
-RUN /opt/logstash/bin/plugin install logstash-filter-translate
+# Copy fluentd config
+ADD etc/fluent/fluent.conf /etc/td-agent/td-agent.conf
+ADD etc/fluent/fluent.conf /etc/fluent/fluent.conf
 
 # Kibana
 RUN \
@@ -38,9 +48,15 @@ RUN \
 
 ADD etc/supervisor/conf.d/kibana.conf /etc/supervisor/conf.d/kibana.conf
 
-EXPOSE 80
+# Expose Fluentd port.
+EXPOSE 24224
+EXPOSE 8888
 
-ENV PATH /opt/logstash/bin:$PATH
+EXPOSE 9200
+EXPOSE 9300
+
+
+EXPOSE 80
 
 CMD [ "/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf" ]
 
