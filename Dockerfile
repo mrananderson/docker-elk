@@ -36,8 +36,8 @@ RUN fluentd --setup=/etc/fluent && \
     mkdir -p /var/log/fluent
 
 # Copy fluentd config
-ADD config/etc/fluent/fluent.conf /etc/td-agent/td-agent.conf
-ADD config/etc/fluent/fluent.conf /etc/fluent/fluent.conf
+ADD etc/fluent/fluent.conf /etc/td-agent/td-agent.conf
+ADD etc/fluent/fluent.conf /etc/fluent/fluent.conf
 
 
 # Kibana
