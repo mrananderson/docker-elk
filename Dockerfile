@@ -50,7 +50,6 @@ ADD etc/supervisor/conf.d/kibana.conf /etc/supervisor/conf.d/kibana.conf
 
 # Expose Fluentd port.
 EXPOSE 24224
-EXPOSE 8888
 
 EXPOSE 9200
 EXPOSE 9300
