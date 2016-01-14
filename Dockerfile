@@ -63,7 +63,6 @@ EXPOSE 9300
 
 # Expose Fluentd port.
 EXPOSE 24224
-EXPOSE 8888
 
 # Expose nginx http ports
 EXPOSE 80
