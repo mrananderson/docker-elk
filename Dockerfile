@@ -1,9 +1,7 @@
-FROM java:8
-MAINTAINER William Durand <william.durand1@gmail.com>
+# Pull base image.
+FROM amitanandj/javadockerfile
+MAINTAINER Amit Anand <amitanandj@hotmail.com>
 
-ENV DEBIAN_FRONTEND noninteractive
-
-RUN apt-get update
 RUN apt-get install --no-install-recommends -y supervisor curl
 
 # Elasticsearch
@@ -21,24 +19,25 @@ RUN \
 
 ADD etc/supervisor/conf.d/elasticsearch.conf /etc/supervisor/conf.d/elasticsearch.conf
 
+
 RUN apt-get -y install curl libcurl4-openssl-dev ruby ruby-dev make build-essential
 
 # Install Fluentd.
+RUN echo "deb http://packages.treasure-data.com/precise/ precise contrib" > /etc/apt/sources.list.d/treasure-data.list && \
+    apt-get update && \
+    apt-get install -y --force-yes libssl0.9.8 software-properties-common td-agent && \
+    apt-get clean
 ENV GEM_HOME /usr/lib/fluent/ruby/lib/ruby/gems/1.9.1/
 ENV GEM_PATH /usr/lib/fluent/ruby/lib/ruby/gems/1.9.1/
 ENV PATH /usr/lib/fluent/ruby/bin:$PATH
-
-RUN gem install fluentd
 RUN fluentd --setup=/etc/fluent && \
     /usr/lib/fluent/ruby/bin/fluent-gem install fluent-plugin-elasticsearch \
     fluent-plugin-secure-forward fluent-plugin-record-reformer fluent-plugin-exclude-filter && \
     mkdir -p /var/log/fluent
 
 # Copy fluentd config
-ADD etc/fluent/fluent.conf /etc/td-agent/td-agent.conf
+ADD config/etc/fluent/fluent.conf /etc/td-agent/td-agent.conf
 ADD config/etc/fluent/fluent.conf /etc/fluent/fluent.conf
-
-RUN /etc/init.d/td-agent restart
 
 
 # Kibana
@@ -49,14 +48,22 @@ RUN \
 
 ADD etc/supervisor/conf.d/kibana.conf /etc/supervisor/conf.d/kibana.conf
 
-# Expose Fluentd port.
-EXPOSE 24224
 
+# Install supervisord.
+
+RUN apt-get install -y --no-install-recommends supervisor
+
+
+# Set default command to supervisor.
+CMD [ "/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf" ]
+
+# Expose Elasticsearch ports.
 EXPOSE 9200
 EXPOSE 9300
 
+# Expose Fluentd port.
+EXPOSE 24224
+EXPOSE 8888
 
+# Expose nginx http ports
 EXPOSE 80
-
-CMD [ "/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf" ]
-
